@@ -14,7 +14,8 @@ class CartController extends Controller
 
     public function add(Request $request, int $id)
     {
-        Cart::add($id, max(1, (int) $request->input('qty', 1)));
+        $variantId = (int) $request->input('variant_id', 0) ?: null;
+        Cart::add($id, max(1, (int) $request->input('qty', 1)), $variantId);
         if ($request->input('buy')) {
             return redirect()->route('checkout');
         }
@@ -23,15 +24,15 @@ class CartController extends Controller
 
     public function update(Request $request)
     {
-        foreach ((array) $request->input('qty', []) as $id => $qty) {
-            Cart::update((int) $id, (int) $qty);
+        foreach ((array) $request->input('qty', []) as $key => $qty) {
+            Cart::update((string) $key, (int) $qty);
         }
         return back()->with('ok', __('messages.qty_updated'));
     }
 
-    public function remove(int $id)
+    public function remove(string $key)
     {
-        Cart::remove($id);
+        Cart::remove($key);
         return back();
     }
 

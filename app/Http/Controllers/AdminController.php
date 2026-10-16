@@ -7,6 +7,9 @@ use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductImage;
+use App\Models\ProductVariant;
+use App\Models\Review;
 use App\Models\Setting;
 use App\Models\Subcategory;
 use App\Models\User;
@@ -102,33 +105,72 @@ class AdminController extends Controller
     public function createProduct()
     {
         return view('admin.product-form', [
-            'product'       => null,
-            'categories'    => Category::all(),
-            'subcategories' => Subcategory::all(),
+            'product'         => null,
+            'categories'      => Category::all(),
+            'subcategories'   => Subcategory::all(),
+            'availableImages' => $this->availableImages(),
         ]);
+    }
+
+    private function availableImages(): array
+    {
+        $files = glob(public_path('images/*.jpg')) ?: [];
+        return array_map(fn ($f) => 'images/' . basename($f), $files);
     }
 
     public function storeProduct(Request $request)
     {
         $data = $this->validateProduct($request);
-        Product::create($data);
+        $product = Product::create($data['product']);
+        $this->syncExtras($request, $product);
         return redirect()->route('admin.products')->with('ok', '✓');
     }
 
     public function editProduct(int $id)
     {
         return view('admin.product-form', [
-            'product'       => Product::findOrFail($id),
-            'categories'    => Category::all(),
-            'subcategories' => Subcategory::all(),
+            'product'         => Product::with(['images', 'variants'])->findOrFail($id),
+            'categories'      => Category::all(),
+            'subcategories'   => Subcategory::all(),
+            'availableImages' => $this->availableImages(),
         ]);
     }
 
     public function updateProduct(Request $request, int $id)
     {
         $data = $this->validateProduct($request);
-        Product::findOrFail($id)->update($data);
+        $product = Product::findOrFail($id);
+        $product->update($data['product']);
+        $this->syncExtras($request, $product);
         return redirect()->route('admin.products')->with('ok', '✓');
+    }
+
+    /** Save gallery images + variants for a product. */
+    private function syncExtras(Request $request, Product $product): void
+    {
+        $images = array_values(array_filter(array_map('trim', (array) $request->input('images', []))));
+        ProductImage::where('product_id', $product->id)->delete();
+        foreach (array_slice($images, 0, 10) as $i => $path) {
+            ProductImage::create(['product_id' => $product->id, 'image' => $path, 'sort' => $i]);
+        }
+
+        $variants = $request->input('variants', []);
+        $existing = [];
+        ProductVariant::where('product_id', $product->id)->delete();
+        foreach ((array) $variants as $i => $v) {
+            $nameFa = trim((string) ($v['name_fa'] ?? ''));
+            if ($nameFa === '') {
+                continue;
+            }
+            $existing[] = ProductVariant::create([
+                'product_id'  => $product->id,
+                'name_fa'     => $nameFa,
+                'name_en'     => trim((string) ($v['name_en'] ?? $nameFa)),
+                'price_delta' => (int) ($v['price_delta'] ?? 0),
+                'stock'       => max(0, (int) ($v['stock'] ?? 0)),
+                'sort'        => $i,
+            ]);
+        }
     }
 
     public function destroyProduct(int $id)
@@ -154,7 +196,29 @@ class AdminController extends Controller
         $data['image'] = ($data['image'] ?? '') ?: 'images/cat-buttons.jpg';
         $data['desc_fa'] = $data['desc_fa'] ?? null;
         $data['desc_en'] = $data['desc_en'] ?? null;
-        return $data;
+        return ['product' => $data];
+    }
+
+    /* ---------------- reviews moderation ---------------- */
+
+    public function reviews()
+    {
+        return view('admin.reviews', [
+            'reviews' => Review::with('product')->latest()->get(),
+        ]);
+    }
+
+    public function reviewStatus(Request $request, int $id)
+    {
+        $request->validate(['status' => 'required|in:pending,approved,rejected']);
+        Review::findOrFail($id)->update(['status' => $request->input('status')]);
+        return back()->with('ok', '✓');
+    }
+
+    public function destroyReview(int $id)
+    {
+        Review::findOrFail($id)->delete();
+        return back()->with('ok', '✓');
     }
 
     /* ---------------- orders ---------------- */

@@ -2,6 +2,9 @@
 
 @section('title', __('messages.login'))
 
+@section('meta_desc'){{ __('messages.meta_default_desc') }}@endsection
+@php($robots = 'noindex, follow')
+
 @section('content')
 <div class="auth-wrap">
     {{-- ===== cinematic visual side ===== --}}
@@ -30,6 +33,10 @@
             <h1>{{ __('messages.auth_welcome') }}</h1>
             <p class="sub">{{ __('messages.auth_welcome_d') }}</p>
 
+            @if($errors->any())
+                <div class="auth-err">⚠️ {{ $errors->first() }}</div>
+            @endif
+
             <form method="POST" action="{{ route('login.submit') }}" class="auth-form">
                 @csrf
                 <div class="form-group">
@@ -42,9 +49,9 @@
                 </div>
                 <label class="auth-check">
                     <input type="checkbox" name="remember">
-                    {{ __('messages.my_account') }} — Remember me
+                    {{ __('messages.remember_me') }}
                 </label>
-                <button class="btn btn-primary btn-sweep btn-block" type="submit">{{ __('messages.login') }} ←</button>
+                <button class="btn btn-primary btn-sweep btn-block" type="submit">{{ __('messages.login') }}</button>
             </form>
 
             <div class="auth-divider">✦</div>

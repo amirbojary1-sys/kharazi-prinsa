@@ -53,7 +53,64 @@
                 <button class="btn btn-green" type="submit" style="flex:1">{{ __('messages.admin_save') }}</button>
                 <a class="btn btn-outline" href="{{ route('admin.products') }}" style="flex:1">{{ __('messages.admin_cancel') }}</a>
             </div>
+
+            <div class="form-group full">
+                <label>🖼 {{ __('messages.p_gallery') }}</label>
+                <p style="font-size:.78rem;color:var(--muted);margin-bottom:8px">{{ __('messages.p_gallery_hint') }}</p>
+                <div class="gallery-picker">
+                    @foreach($availableImages as $img)
+                        <label class="gp-item {{ in_array($img, old('images', $product ? $product->images->pluck('image')->all() : [])) ? 'on' : '' }}">
+                            <input type="checkbox" name="images[]" value="{{ $img }}"
+                                   {{ in_array($img, old('images', $product ? $product->images->pluck('image')->all() : [])) ? 'checked' : '' }}>
+                            <img src="{{ asset($img) }}" alt="">
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="form-group full">
+                <label>🎨 {{ __('messages.p_variants') }}</label>
+                <div id="variantRows">
+                    @php($vrows = old('variants', $product ? $product->variants->map(fn($v) => ['name_fa'=>$v->name_fa,'name_en'=>$v->name_en,'price_delta'=>$v->price_delta,'stock'=>$v->stock])->all() : []))
+                    @if(count($vrows))
+                        @foreach($vrows as $i => $v)
+                            <div class="variant-row">
+                                <input class="input" name="variants[{{ $i }}][name_fa]" placeholder="{{ __('messages.p_field_name_fa') }}" value="{{ $v['name_fa'] ?? '' }}">
+                                <input class="input" name="variants[{{ $i }}][name_en]" placeholder="{{ __('messages.p_field_name_en') }}" value="{{ $v['name_en'] ?? '' }}">
+                                <input class="input" type="number" name="variants[{{ $i }}][price_delta]" placeholder="{{ __('messages.v_price_delta') }}" value="{{ $v['price_delta'] ?? 0 }}">
+                                <input class="input" type="number" name="variants[{{ $i }}][stock]" placeholder="{{ __('messages.p_field_stock') }}" value="{{ $v['stock'] ?? 0 }}">
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="variant-row">
+                            <input class="input" name="variants[0][name_fa]" placeholder="{{ __('messages.p_field_name_fa') }}">
+                            <input class="input" name="variants[0][name_en]" placeholder="{{ __('messages.p_field_name_en') }}">
+                            <input class="input" type="number" name="variants[0][price_delta]" placeholder="{{ __('messages.v_price_delta') }}">
+                            <input class="input" type="number" name="variants[0][stock]" placeholder="{{ __('messages.p_field_stock') }}">
+                        </div>
+                    @endif
+                </div>
+                <button type="button" class="mini-btn" id="addVariant" style="margin-top:8px">+ {{ __('messages.v_add') }}</button>
+            </div>
+
         </form>
     </div>
 </div>
+    <script>
+        (function(){
+            var i = document.querySelectorAll('#variantRows .variant-row').length;
+            var btn = document.getElementById('addVariant');
+            if (!btn) return;
+            btn.addEventListener('click', function(){
+                var html = document.querySelector('#variantRows .variant-row').outerHTML
+                    .replace(/variants\[\d+\]/g, 'variants[' + i + ']')
+                    .replace(/value="[^"]*"/g, 'value=""');
+                document.getElementById('variantRows').insertAdjacentHTML('beforeend', html);
+                i++;
+            });
+            document.querySelectorAll('.gp-item input').forEach(function(cb){
+                cb.addEventListener('change', function(){ cb.closest('.gp-item').classList.toggle('on', cb.checked); });
+            });
+        })();
+    </script>
 @endsection

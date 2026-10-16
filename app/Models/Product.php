@@ -7,11 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     protected $fillable = [
-        'category_id', 'subcategory_id', 'name_fa', 'name_en', 'desc_fa', 'desc_en',
-        'price', 'stock', 'image', 'featured',
+        'name_fa', 'name_en', 'desc_fa', 'desc_en', 'price', 'stock',
+        'category_id', 'subcategory_id', 'image', 'featured',
     ];
-
-    protected $casts = ['featured' => 'boolean'];
 
     public function category()
     {
@@ -23,18 +21,51 @@ class Product extends Model
         return $this->belongsTo(Subcategory::class);
     }
 
-    public function orderItems()
+    public function images()
     {
-        return $this->hasMany(OrderItem::class);
+        return $this->hasMany(ProductImage::class)->orderBy('sort');
     }
 
-    public function getNameAttribute()
+    public function variants()
+    {
+        return $this->hasMany(ProductVariant::class)->orderBy('sort');
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    public function approvedReviews()
+    {
+        return $this->hasMany(Review::class)->approved()->latest();
+    }
+
+    public function getNameAttribute(): string
     {
         return app()->getLocale() === 'fa' ? $this->name_fa : $this->name_en;
     }
 
-    public function getDescAttribute()
+    public function getDescAttribute(): string
     {
-        return app()->getLocale() === 'fa' ? $this->desc_fa : $this->desc_en;
+        return app()->getLocale() === 'fa' ? ($this->desc_fa ?: $this->desc_en) : ($this->desc_en ?: $this->desc_fa);
+    }
+
+    /** [0 => main image, ...gallery paths] */
+    public function gallery(): array
+    {
+        $paths = $this->images()->pluck('image')->all();
+        return array_values(array_unique(array_merge([$this->image], $paths)));
+    }
+
+    public function avgRating(): ?float
+    {
+        $avg = $this->approvedReviews()->avg('rating');
+        return $avg ? round($avg, 1) : null;
+    }
+
+    public function reviewsCount(): int
+    {
+        return $this->approvedReviews()->count();
     }
 }

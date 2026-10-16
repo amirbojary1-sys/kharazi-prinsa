@@ -19,6 +19,13 @@
     </div>
     <div class="product-body">
         <h3 onclick="location.href='{{ route('product', $p->id) }}'">{{ $p->name }}</h3>
+        @php($pcAvg = $p->avgRating())
+        @if($pcAvg)
+            <div class="pc-rating">
+                <span class="stars">@for($i = 1; $i <= 5; $i++)<span class="star {{ $i <= round($pcAvg) ? 'fill' : '' }}">★</span>@endfor</span>
+                <small>({{ \App\Support\Fmt::num($p->reviewsCount()) }})</small>
+            </div>
+        @endif
         <p class="desc">{{ $p->desc }}</p>
         <div class="product-foot">
             <div class="price">@price($p->price) <small>{{ \App\Support\Fmt::toman() }}</small></div>

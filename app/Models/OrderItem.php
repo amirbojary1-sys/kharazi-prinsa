@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class OrderItem extends Model
 {
     protected $fillable = [
-        'order_id', 'product_id', 'name_fa', 'name_en', 'price', 'qty', 'image',
+        'order_id', 'product_id', 'name_fa', 'name_en', 'variant_name', 'price', 'qty', 'image',
     ];
 
     public function order()
@@ -22,6 +22,7 @@ class OrderItem extends Model
 
     public function getNameAttribute()
     {
-        return app()->getLocale() === 'fa' ? $this->name_fa : $this->name_en;
+        $base = app()->getLocale() === 'fa' ? $this->name_fa : $this->name_en;
+        return $this->variant_name ? "{$base} ({$this->variant_name})" : $base;
     }
 }

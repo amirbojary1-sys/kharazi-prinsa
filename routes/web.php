@@ -11,6 +11,46 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ShopController;
 use Illuminate\Support\Facades\Route;
 
+
+/* ---------- SEO: sitemap.xml ---------- */
+Route::get('/sitemap.xml', function () {
+    $products   = \App\Models\Product::orderBy('id')->get();
+    $categories = \App\Models\Category::orderBy('id')->get();
+
+    $urls = [
+        ['loc' => route('home'),      'priority' => '1.0', 'changefreq' => 'daily'],
+        ['loc' => route('shop'),      'priority' => '0.9', 'changefreq' => 'daily'],
+        ['loc' => route('categories'),'priority' => '0.8', 'changefreq' => 'weekly'],
+        ['loc' => route('about'),     'priority' => '0.5', 'changefreq' => 'monthly'],
+        ['loc' => route('contact'),   'priority' => '0.5', 'changefreq' => 'monthly'],
+        ['loc' => route('track'),     'priority' => '0.4', 'changefreq' => 'monthly'],
+    ];
+    foreach ($categories as $c) {
+        $urls[] = ['loc' => route('category', $c->slug), 'priority' => '0.8', 'changefreq' => 'weekly'];
+    }
+    foreach ($products as $p) {
+        $urls[] = ['loc' => route('product', $p->id), 'priority' => '0.7', 'changefreq' => 'weekly', 'lastmod' => $p->updated_at->toDateString()];
+    }
+
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+    $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">' . "\n";
+    foreach ($urls as $u) {
+        $xml .= "  <url>\n";
+        $xml .= '    <loc>' . $u['loc'] . "</loc>\n";
+        if (!empty($u['lastmod'])) {
+            $xml .= '    <lastmod>' . $u['lastmod'] . "</lastmod>\n";
+        }
+        $xml .= '    <changefreq>' . $u['changefreq'] . "</changefreq>\n";
+        $xml .= '    <priority>' . $u['priority'] . "</priority>\n";
+        $xml .= '    <xhtml:link rel="alternate" hreflang="fa" href="' . $u['loc'] . '?lang=fa"/>' . "\n";
+        $xml .= '    <xhtml:link rel="alternate" hreflang="en" href="' . $u['loc'] . '?lang=en"/>' . "\n";
+        $xml .= "  </url>\n";
+    }
+    $xml .= '</urlset>';
+
+    return response($xml, 200)->header('Content-Type', 'application/xml; charset=UTF-8');
+})->name('sitemap');
+
 /* ---------- storefront ---------- */
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
@@ -36,11 +76,23 @@ Route::get('/product/{id}', [ShopController::class, 'show'])->name('product');
 Route::post('/favorites/{id}', [FavoriteController::class, 'toggle'])->name('favorites.toggle');
 Route::get('/favorites', [FavoriteController::class, 'index'])->name('favorites');
 
+/* ---------- my account ---------- */
+Route::get('/account', [\App\Http\Controllers\AccountController::class, 'index'])->name('account')->middleware('auth');
+Route::get('/account/order/{id}', [\App\Http\Controllers\AccountController::class, 'order'])->name('account.order')->middleware('auth');
+Route::post('/account/profile', [\App\Http\Controllers\AccountController::class, 'updateProfile'])->name('account.profile')->middleware('auth');
+
+/* ---------- order tracking (public) ---------- */
+Route::get('/track', [\App\Http\Controllers\TrackController::class, 'show'])->name('track');
+Route::post('/track', [\App\Http\Controllers\TrackController::class, 'lookup'])->name('track.lookup');
+
+/* ---------- reviews ---------- */
+Route::post('/product/{id}/review', [\App\Http\Controllers\ReviewController::class, 'store'])->name('reviews.store');
+
 /* ---------- cart + checkout ---------- */
 Route::get('/cart', [CartController::class, 'index'])->name('cart');
 Route::post('/cart/add/{id}', [CartController::class, 'add'])->name('cart.add');
 Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
-Route::post('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
+Route::post('/cart/remove/{key}', [CartController::class, 'remove'])->where('key', '[0-9:]+')->name('cart.remove');
 Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon');
 Route::post('/cart/coupon/remove', [CartController::class, 'removeCoupon'])->name('cart.coupon.remove');
 
@@ -81,6 +133,10 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
     Route::delete('/coupons/{id}', [AdminController::class, 'destroyCoupon'])->name('coupons.destroy');
 
     Route::get('/transactions', [AdminController::class, 'transactions'])->name('transactions');
+
+    Route::get('/reviews', [AdminController::class, 'reviews'])->name('reviews');
+    Route::post('/reviews/{id}/status', [AdminController::class, 'reviewStatus'])->name('reviews.status');
+    Route::delete('/reviews/{id}', [AdminController::class, 'destroyReview'])->name('reviews.destroy');
 
     Route::get('/settings', [AdminController::class, 'settingsForm'])->name('settings');
     Route::post('/settings', [AdminController::class, 'settingsSave'])->name('settings.save');

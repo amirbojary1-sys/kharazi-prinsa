@@ -2,6 +2,9 @@
 
 @section('title', __('messages.cat_title'))
 
+@section('meta_desc'){{ __('messages.meta_categories_desc') }}@endsection
+@php($robots = 'index, follow')
+
 @section('content')
     <div class="container">
         <div class="page-head reveal">

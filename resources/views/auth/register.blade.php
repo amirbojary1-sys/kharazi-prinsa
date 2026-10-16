@@ -2,6 +2,9 @@
 
 @section('title', __('messages.register'))
 
+@section('meta_desc'){{ __('messages.meta_default_desc') }}@endsection
+@php($robots = 'noindex, follow')
+
 @section('content')
 <div class="auth-wrap">
     {{-- ===== cinematic visual side ===== --}}
@@ -29,6 +32,10 @@
             </div>
             <h1>{{ __('messages.auth_create') }}</h1>
             <p class="sub">{{ __('messages.auth_create_d') }}</p>
+
+            @if($errors->any())
+                <div class="auth-err">⚠️ {{ $errors->first() }}</div>
+            @endif
 
             <form method="POST" action="{{ route('register.submit') }}" class="auth-form">
                 @csrf

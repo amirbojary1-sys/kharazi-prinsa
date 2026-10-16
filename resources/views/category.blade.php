@@ -2,6 +2,17 @@
 
 @section('title', $category->name)
 
+@section('meta_desc')
+{{ \Illuminate\Support\Str::limit(($category->desc ?? '') ?: __('messages.meta_shop_desc'), 155) }}
+@endsection
+@php($jsonLd = [
+    \App\Support\SEO::breadcrumbSchema([
+        ['name' => __('messages.nav_home'), 'url' => route('home')],
+        ['name' => $category->name],
+    ]),
+])
+@php($robots = 'index, follow')
+
 @section('content')
     {{-- ===== photographic hero banner ===== --}}
     <section class="cat-hero">

@@ -4,7 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="description" content="{{ __('messages.brand') }} — {{ __('messages.footer_tag') }}">
+    @php($seoDesc = trim($__env->yieldContent('meta_desc')) ?: __('messages.meta_default_desc'))
+    @php($seoTitle = trim($__env->yieldContent('title')))
+    @php($seoImage = trim($__env->yieldContent('og_image')) ?: asset('images/hero-cinematic.jpg'))
+    <meta name="description" content="{{ $seoDesc }}">
+    <meta name="keywords" content="{{ __('messages.meta_keywords') }}">
+    <meta name="author" content="{{ __('messages.brand') }}">
+    <meta name="robots" content="{{ $robots ?? 'index, follow' }}">
+    <link rel="canonical" href="{{ url()->current() }}">
+    @foreach(\App\Support\SEO::alternates() as $hreflang => $href)
+        <link rel="alternate" hreflang="{{ $hreflang }}" href="{{ $href }}">
+    @endforeach
+    {{-- Open Graph --}}
+    <meta property="og:type" content="{{ $ogType ?? 'website' }}">
+    <meta property="og:site_name" content="{{ __('messages.brand') }}">
+    <meta property="og:title" content="{{ $seoTitle !== '' ? $seoTitle . ' | ' . __('messages.brand') : __('messages.brand') }}">
+    <meta property="og:description" content="{{ $seoDesc }}">
+    <meta property="og:image" content="{{ $seoImage }}">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:locale" content="{{ app()->getLocale() === 'fa' ? 'fa_IR' : 'en_US' }}">
+    <meta property="og:locale:alternate" content="{{ app()->getLocale() === 'fa' ? 'en_US' : 'fa_IR' }}">
+    {{-- Twitter --}}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $seoTitle !== '' ? $seoTitle . ' | ' . __('messages.brand') : __('messages.brand') }}">
+    <meta name="twitter:description" content="{{ $seoDesc }}">
+    <meta name="twitter:image" content="{{ $seoImage }}">
+    {{-- JSON-LD: Organization + WebSite --}}
+    <script type="application/ld+json">{!! json_encode(\App\Support\SEO::orgSchema(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+    @isset($jsonLd)
+        @foreach((array) $jsonLd as $schema)
+            <script type="application/ld+json">{!! json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+        @endforeach
+    @endisset
     <title>@yield('title', __('messages.brand'))</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23157A4B'/%3E%3Cpath d='M3 8l3.5 3L12 5l5.5 6L21 8l-1.8 10H4.8L3 8z' fill='%23C7F0D8'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="{{ asset('css/theme.css') }}">
@@ -83,10 +114,10 @@
 
         <div class="header-actions">
             @auth
-                <div class="user-chip" title="{{ Auth::user()->name }}">
+                <a class="user-chip" href="{{ route('account') }}" title="{{ __('messages.my_account') }}">
                     <span class="uc-avatar">{{ mb_substr(Auth::user()->name, 0, 1) }}</span>
                     <span class="uc-name">{{ Auth::user()->name }}</span>
-                </div>
+                </a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button class="lang-btn" title="{{ __('messages.logout_acc') }}">↪<span class="lang-text">{{ __('messages.logout_acc') }}</span></button>
@@ -171,6 +202,11 @@
     </div>
     <div class="container footer-bottom">
         <span>© @num(now()->year) {{ __('messages.brand') }} — {{ __('messages.rights') }}</span>
+        <span class="footer-links">
+            <a href="{{ route('track') }}">{{ __('messages.track_title') }}</a>
+            <a href="{{ route('favorites') }}">{{ __('messages.fav_title') }}</a>
+            <a href="{{ route('shop') }}">{{ __('messages.shop_title') }}</a>
+        </span>
         <span>{{ __('messages.brandSub') }}</span>
     </div>
 </footer>

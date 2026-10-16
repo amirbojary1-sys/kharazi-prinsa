@@ -144,3 +144,12 @@
   .auth-panel { padding: 36px 22px; }
   .auth-form .row { flex-direction: column; }
 }
+
+
+/* persistent inline auth error */
+.auth-err {
+    background:rgba(214,69,65,.1); border:1.5px solid rgba(214,69,65,.4);
+    color:#b23b37; border-radius:14px; padding:13px 16px; font-size:.87rem;
+    font-weight:700; margin-bottom:16px; line-height:1.8;
+}
+[data-theme="dark"] .auth-err { color:#ff9b97; border-color:rgba(255,120,115,.35); }

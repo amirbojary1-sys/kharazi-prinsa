@@ -5,12 +5,15 @@ namespace App\Support;
 use App\Models\Coupon;
 use App\Models\Product;
 use App\Models\Setting;
+use App\Models\ProductVariant;
 
 /**
- * Session-based shopping cart: [product_id => qty] + coupon session key.
+ * Session-based shopping cart.
+ * Keys are "productId" or "productId:variantId" → qty.
  */
 class Cart
 {
+    /** @return array<string, int> */
     public static function items(): array
     {
         return session('cart', []);
@@ -21,36 +24,66 @@ class Cart
         return (int) array_sum(self::items());
     }
 
-    public static function add(int $id, int $qty = 1): void
+    public static function key(int $productId, ?int $variantId = null): string
     {
-        $cart = self::items();
-        $product = Product::find($id);
-        if (!$product || $product->stock <= 0) {
+        return $variantId ? "{$productId}:{$variantId}" : (string) $productId;
+    }
+
+    private static function parseKey(string $key): array
+    {
+        [$pid, $vid] = array_pad(explode(':', $key), 2, null);
+        return [(int) $pid, $vid !== null && $vid !== '' ? (int) $vid : null];
+    }
+
+    /** Available stock for a cart line. */
+    private static function stockFor(int $productId, ?int $variantId): int
+    {
+        if ($variantId) {
+            $v = ProductVariant::find($variantId);
+            return $v && $v->product_id === $productId ? (int) $v->stock : 0;
+        }
+        $p = Product::find($productId);
+        return $p ? (int) $p->stock : 0;
+    }
+
+    public static function add(int $id, int $qty = 1, ?int $variantId = null): void
+    {
+        $key = self::key($id, $variantId);
+        $stock = self::stockFor($id, $variantId);
+        if ($stock <= 0 && $variantId === null) {
+            $p = Product::find($id);
+            if (!$p || $p->stock <= 0) {
+                return;
+            }
+            $stock = (int) $p->stock;
+        }
+        if ($stock <= 0) {
             return;
         }
-        $cart[$id] = min(($cart[$id] ?? 0) + $qty, $product->stock);
+        $cart = self::items();
+        $cart[$key] = min(($cart[$key] ?? 0) + $qty, $stock);
         session(['cart' => $cart]);
     }
 
-    public static function update(int $id, int $qty): void
+    public static function update(string $key, int $qty): void
     {
         $cart = self::items();
-        $product = Product::find($id);
-        if (!$product) {
+        [$pid, $vid] = self::parseKey($key);
+        if (!isset($cart[$key]) && $qty > 0) {
             return;
         }
         if ($qty <= 0) {
-            unset($cart[$id]);
+            unset($cart[$key]);
         } else {
-            $cart[$id] = min($qty, $product->stock);
+            $cart[$key] = min($qty, self::stockFor($pid, $vid) ?: $qty);
         }
         session(['cart' => $cart]);
     }
 
-    public static function remove(int $id): void
+    public static function remove(string $key): void
     {
         $cart = self::items();
-        unset($cart[$id]);
+        unset($cart[$key]);
         session(['cart' => $cart]);
     }
 
@@ -60,23 +93,46 @@ class Cart
         session()->forget('coupon');
     }
 
-    /** @return \Illuminate\Support\Collection<int, object{product: Product, qty: int}> */
+    /**
+     * @return \Illuminate\Support\Collection<int, object{key: string, product: Product, variant: ?ProductVariant, qty: int, price: int}>
+     */
     public static function lines()
     {
-        $ids = array_keys(self::items());
-        $products = Product::with('category')->whereIn('id', $ids)->get()->keyBy('id');
-        $lines = [];
-        foreach (self::items() as $id => $qty) {
-            if (isset($products[$id])) {
-                $lines[] = (object) ['product' => $products[$id], 'qty' => $qty];
+        $items = self::items();
+        $pids = [];
+        $vids = [];
+        foreach (array_keys($items) as $key) {
+            [$pid, $vid] = self::parseKey($key);
+            $pids[] = $pid;
+            if ($vid) {
+                $vids[] = $vid;
             }
+        }
+        $products  = Product::with('category')->whereIn('id', array_unique($pids))->get()->keyBy('id');
+        $variants  = $vids ? ProductVariant::whereIn('id', array_unique($vids))->get()->keyBy('id') : collect();
+
+        $lines = [];
+        foreach ($items as $key => $qty) {
+            [$pid, $vid] = self::parseKey($key);
+            if (!isset($products[$pid])) {
+                continue;
+            }
+            $variant = $vid && isset($variants[$vid]) && $variants[$vid]->product_id === $pid ? $variants[$vid] : null;
+            $price   = $products[$pid]->price + ($variant ? $variant->price_delta : 0);
+            $lines[] = (object) [
+                'key'     => (string) $key,
+                'product' => $products[$pid],
+                'variant' => $variant,
+                'qty'     => $qty,
+                'price'   => $price,
+            ];
         }
         return collect($lines);
     }
 
     public static function subtotal(): int
     {
-        return (int) self::lines()->sum(fn ($l) => $l->product->price * $l->qty);
+        return (int) self::lines()->sum(fn ($l) => $l->price * $l->qty);
     }
 
     /* ------------------------------- coupon ------------------------------- */

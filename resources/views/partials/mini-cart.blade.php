@@ -10,8 +10,8 @@
             <div class="mc-item">
                 <img src="{{ asset($line->product->image) }}" alt="">
                 <div>
-                    <b>{{ $line->product->name }}</b>
-                    <span>@num($line->qty) × @price($line->product->price)</span>
+                    <b>{{ $line->product->name }}@if($line->variant) ({{ $line->variant->name }})@endif</b>
+                    <span>@num($line->qty) × @price($line->price)</span>
                 </div>
             </div>
         @empty

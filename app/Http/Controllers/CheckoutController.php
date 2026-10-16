@@ -64,14 +64,20 @@ class CheckoutController extends Controller
                     'product_id' => $line->product->id,
                     'name_fa'    => $line->product->name_fa,
                     'name_en'    => $line->product->name_en,
-                    'price'      => $line->product->price,
+                    'variant_name' => $line->variant?->name,
+                    'price'      => $line->price,
                     'qty'        => $line->qty,
                     'image'      => $line->product->image,
                 ]);
 
-                $p = Product::find($line->product->id);
-                $p->stock = max(0, $p->stock - $line->qty);
-                $p->save();
+                if ($line->variant) {
+                    $line->variant->stock = max(0, $line->variant->stock - $line->qty);
+                    $line->variant->save();
+                } else {
+                    $p = Product::find($line->product->id);
+                    $p->stock = max(0, $p->stock - $line->qty);
+                    $p->save();
+                }
             }
 
             return $order;

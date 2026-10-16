@@ -5,6 +5,7 @@
     ['admin.customers', '👥', 'admin_customers'],
     ['admin.coupons', '🏷️', 'admin_coupons'],
     ['admin.transactions', '💳', 'admin_transactions'],
+    ['admin.reviews', '⭐', 'admin_reviews'],
     ['admin.settings', '⚙️', 'admin_settings'],
 ])
 <div class="admin-topbar">

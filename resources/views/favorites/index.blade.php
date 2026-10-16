@@ -2,6 +2,9 @@
 
 @section('title', __('messages.fav_title'))
 
+@section('meta_desc'){{ __('messages.meta_default_desc') }}@endsection
+@php($robots = 'noindex, nofollow')
+
 @section('content')
 <div class="container">
     <div class="page-head reveal"><h1>♥ {{ __('messages.fav_title') }}</h1><p>{{ __('messages.fav_sub') }}</p></div>

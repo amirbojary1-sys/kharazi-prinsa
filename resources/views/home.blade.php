@@ -2,6 +2,8 @@
 
 @section('title', __('messages.brand'))
 
+@section('meta_desc'){{ __('messages.meta_home_desc') }}@endsection
+
 @section('content')
     {{-- ================= PHOTO STORY — TOP cinematic scroll ================= --}}
     <section class="photo-story" data-photo-story>

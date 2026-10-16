@@ -2,6 +2,9 @@
 
 @section('title', __('messages.cart_title'))
 
+@section('meta_desc'){{ __('messages.meta_default_desc') }}@endsection
+@php($robots = 'noindex, nofollow')
+
 @section('content')
 <div class="container">
     <div class="page-head reveal"><h1>{{ __('messages.cart_title') }}</h1></div>
@@ -19,20 +22,20 @@
                     <div class="cart-item reveal">
                         <img src="{{ asset($line->product->image) }}" alt="{{ $line->product->name }}">
                         <div>
-                            <h4><a href="{{ route('product', $line->product->id) }}">{{ $line->product->name }}</a></h4>
-                            <div class="meta">{{ $line->product->category->name }} — @price($line->product->price) {{ \App\Support\Fmt::toman() }}</div>
+                            <h4><a href="{{ route('product', $line->product->id) }}">{{ $line->product->name }}@if($line->variant) <small style="color:var(--muted)">({{ $line->variant->name }})</small>@endif</a></h4>
+                            <div class="meta">{{ $line->product->category->name }} — @price($line->price) {{ \App\Support\Fmt::toman() }}</div>
                             <form method="POST" action="{{ route('cart.update') }}" style="margin-top:9px">
                                 @csrf
                                 <div class="qty-control">
-                                    <button type="submit" name="qty[{{ $line->product->id }}]" value="{{ $line->qty - 1 }}">−</button>
-                                    <input name="qty[{{ $line->product->id }}]" value="{{ $line->qty }}" inputmode="numeric" onchange="this.form.submit()">
-                                    <button type="submit" name="qty[{{ $line->product->id }}]" value="{{ $line->qty + 1 }}">+</button>
+                                    <button type="submit" name="qty[{{ $line->key }}]" value="{{ $line->qty - 1 }}">−</button>
+                                    <input name="qty[{{ $line->key }}]" value="{{ $line->qty }}" inputmode="numeric" onchange="this.form.submit()">
+                                    <button type="submit" name="qty[{{ $line->key }}]" value="{{ $line->qty + 1 }}">+</button>
                                 </div>
                             </form>
                         </div>
                         <div class="cart-item-side">
-                            <div class="price">@price($line->product->price * $line->qty) <small>{{ \App\Support\Fmt::toman() }}</small></div>
-                            <form method="POST" action="{{ route('cart.remove', $line->product->id) }}">
+                            <div class="price">@price($line->price * $line->qty) <small>{{ \App\Support\Fmt::toman() }}</small></div>
+                            <form method="POST" action="{{ route('cart.remove', $line->key) }}">
                                 @csrf
                                 <button class="remove-btn">✕ {{ __('messages.remove') }}</button>
                             </form>

@@ -55,7 +55,7 @@ class ShopController extends Controller
 
     public function show($id)
     {
-        $product = Product::with('category', 'subcategory')->findOrFail($id);
+        $product = Product::with(['category', 'subcategory', 'images', 'variants', 'approvedReviews.user'])->findOrFail($id);
         $related = Product::where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->take(4)
