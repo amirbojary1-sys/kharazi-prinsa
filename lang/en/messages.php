@@ -347,6 +347,6 @@ return [
     'meta_shop_desc' => 'Prinsa shop: 36+ products including buttons, zippers, thread, ribbon, lace, fabric and sewing tools at great prices with fast shipping.',
     'meta_track_desc' => 'Track your Prinsa order online with your order code and phone number; see your package status.',
     'remember_me' => 'Remember me',
-    'grid_sub' => 'Prinsa's best sellers, ready to ship',
+    'grid_sub' => 'Prinsa best sellers, ready to ship',
     'grid_title' => 'Our Featured Products',
 ];
