@@ -176,6 +176,24 @@
         </div>
     </section>
 
+    {{-- ================= product grid (always visible) ================= --}}
+    <section class="section" style="padding-top:0">
+        <div class="container">
+            <div class="section-head reveal">
+                <div class="ornament"><span>❖</span></div>
+                <div class="eyebrow">New arrivals</div>
+                <h2 class="grad-title">{{ __('messages.grid_title') }}</h2>
+                <div class="stitch"></div>
+                <p>{{ __('messages.grid_sub') }}</p>
+            </div>
+            <div class="product-grid">
+                @foreach($grid as $p)
+                    @include('partials.product-card', ['p' => $p])
+                @endforeach
+            </div>
+        </div>
+    </section>
+
     {{-- ================= cinematic parallax banner ================= --}}
     <section class="section" style="padding-top:0">
         <div class="container">

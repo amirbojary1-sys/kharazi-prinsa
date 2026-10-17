@@ -14,6 +14,7 @@ class HomeController extends Controller
             'categories'    => \App\Models\Category::with('subcategories')->withCount('products')->get(),
             'subcategories' => \App\Models\Subcategory::with('category')->withCount('products')->get(),
             'featured'      => Product::where('featured', true)->take(8)->get(),
+            'grid'          => Product::with('category')->latest()->take(8)->get(),
         ]);
     }
 
